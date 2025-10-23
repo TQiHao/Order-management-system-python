@@ -1,0 +1,236 @@
+class OrderItem:
+    """ A class to represent an item in a customer's order.
+    """
+    def __init__(self, prod, unit_price, qty, discount=0):
+        """
+        Initializes the OrderItem with product name, unit price, quantity, and optional discount.
+        """
+        self.__prod = prod
+        self.__unit_price = unit_price
+        self.__qty = qty
+        self.__discount = discount
+
+    def get_prod(self):
+        """
+        Returns the product name.
+        """
+        return self.__prod
+    
+
+    def get_qty(self):
+        """
+        Returns the quantity of the product.
+        """
+        return self.__qty
+
+    def get_unit_price(self):
+        """
+        Returns the unit price of the product.
+        """
+        return self.__unit_price
+
+    def set_qty(self, qty):
+        """
+        Updates the quantity of the product.
+        """
+        self.__qty = qty
+
+    def get_total_amount(self):
+        """
+        Returns the total amount for the item before discounts.
+        """
+        return self.__unit_price * self.__qty
+
+    def get_discount_amount(self):
+        """
+        Returns the discount amount based on the discount percentage.
+        """
+        return self.get_total_amount() * (self.__discount / 100)
+
+    def get_actual_amount(self):
+        """
+        Returns the actual amount to be paid after applying the discount.
+        """
+        return self.get_total_amount() - self.get_discount_amount()
+
+    def __str__(self):
+        """
+        Returns a string representation of the order item.
+        """
+        return f"{self.__prod} - {self.__qty} units @ ${self.get_actual_amount():.2f}"
+
+class CustOrder:
+    """
+    A class to represent a customer's order.
+    """
+    __last_ref_no = 112232  
+
+    @classmethod
+    def generate_ref_no(cls):
+        """
+        Generates a unique reference number for the order.
+        """
+        cls.__last_ref_no += 1
+        return cls.__last_ref_no
+
+    def __init__(self, recipient, address, date_ordered):
+        """
+        Initializes the CustOrder with recipient details, address, and date ordered.
+        """
+        self.__ref_no = CustOrder.generate_ref_no()  
+        self.__recipient = recipient
+        self.__address = address
+        self.__date_ordered = date_ordered
+        self.__date_delivered = None
+        self.__items = []
+
+
+    def add_item(self, order_item):
+        """
+        Adds an item to the order.
+        If the item already exists, it updates the quantity.
+        """
+        for item in self.__items:
+            if item.get_prod() == order_item.get_prod():
+                item.set_qty(item.get_qty() + order_item.get_qty())
+                return
+        self.__items.append(order_item)
+
+    def remove_item(self, prod):
+        """
+        Removes an item from the order based on the product name.
+        
+        Returns:
+            True if the item is removed, False if the item is not found.
+        """
+        for item in self.__items:
+            if item.get_prod() == prod:
+                self.__items.remove(item)
+                return True
+        return False
+
+    def get_total(self):
+        """
+        Returns the total cost of the order after applying discounts.
+        """
+        return sum(item.get_actual_amount() for item in self.__items)
+
+    def __str__(self):
+        """
+        Returns a string representation of the order, including all items and their details.
+        """
+        order_info = (
+            "=============================\n"
+            f"Order ref: {self.__ref_no}\n"
+            f"Name: {self.__recipient}\n"
+            f"Address: {self.__address}\n"
+            f"Date ordered/delivered: {self.__date_ordered} / "
+            f"{self.__date_delivered if self.__date_delivered else 'Not delivered'}\n"
+            "=============================\n"
+            "S/N  Product         Price   Qty  SubTotal\n"
+        )
+        counter = 1
+        for item in self.__items:
+            discounted_price = '*' if item.get_discount_amount() > 0 else ''
+            order_info += (
+                f"{counter:<4}{item.get_prod():<15} "
+                f"{item.get_unit_price():<6.2f}{discounted_price:<1}  "
+                f"{item.get_qty():<4}  ${item.get_actual_amount():<6.2f}\n"
+            )
+            counter += 1
+        order_info += "=============================\n"
+        order_info += f"Total: ${self.get_total():.2f}\n"
+        return order_info
+
+def main():
+    """
+    Main function to demonstrate the usage of CustOrder and OrderItem classes.
+    """
+    order = CustOrder(
+        recipient="Ong Siew Teng",
+        address="1, Oxley drive, Singapore 545322",
+        date_ordered="4-Oct-2024 10:00am",
+    )
+
+    item1 = OrderItem("Mars", 2.00, 2)
+    item2 = OrderItem("Maggie Mee", 2.80, 1, 10)
+
+    order.add_item(item1)
+    order.add_item(item2)
+
+    print("\nScenario 1")
+    print(order)
+
+
+    order.add_item(OrderItem("Mars", 2.00, 1))
+
+    print("\nScenario 2")
+    print("After adding duplicate item:")
+    print(order)
+
+    order.remove_item("Mars")
+
+    print("\nScenario 3")
+    print("After removing Mars:")
+    print(order)
+
+    print("\nScenario 4")
+    removed = order.remove_item("Chips")
+    print(f"Tried to remove non-existing item: {'Success' if removed else 'Failed'}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+Output:
+
+Scenario 1
+=============================
+Order ref: 112233
+Name: Ong Siew Teng
+Address: 1, Oxley drive, Singapore 545322
+Date ordered/delivered: 4-Oct-2024 10:00am / Not delivered
+=============================
+S/N  Product         Price   Qty  SubTotal
+1   Mars            2.00     2     $4.00  
+2   Maggie Mee      2.80  *  1     $2.52  
+=============================
+Total: $6.52
+
+
+Scenario 2
+After adding duplicate item:
+=============================
+Order ref: 112233
+Name: Ong Siew Teng
+Address: 1, Oxley drive, Singapore 545322
+Date ordered/delivered: 4-Oct-2024 10:00am / Not delivered
+=============================
+S/N  Product         Price   Qty  SubTotal
+1   Mars            2.00     3     $6.00
+2   Maggie Mee      2.80  *  1     $2.52
+=============================
+Total: $8.52
+
+
+Scenario 3
+After removing Mars:
+=============================
+Order ref: 112233
+Name: Ong Siew Teng
+Address: 1, Oxley drive, Singapore 545322
+Date ordered/delivered: 4-Oct-2024 10:00am / Not delivered
+=============================
+S/N  Product         Price   Qty  SubTotal
+1   Maggie Mee      2.80  *  1     $2.52
+=============================
+Total: $2.52
+
+
+Scenario 4
+Tried to remove non-existing item: Failed
